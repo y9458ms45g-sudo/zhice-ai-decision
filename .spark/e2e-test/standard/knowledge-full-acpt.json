@@ -1,0 +1,34 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "priority": "p0",
+      "description": "打开首页，显示欢迎界面：Hello~ Welcome to my world 徽章、智策大标题、进入智策按钮，页面不白屏"
+    },
+    {
+      "id": 2,
+      "priority": "p0",
+      "description": "页面右上角有调色板图标主题切换按钮"
+    },
+    {
+      "id": 3,
+      "priority": "p1",
+      "description": "向下滚动可看到知识网络画布区域，画布上有多个彩色节点"
+    },
+    {
+      "id": 4,
+      "priority": "p1",
+      "description": "继续向下滚动，显示果冻质感卡片区域（多张带图标和标题的卡片）"
+    },
+    {
+      "id": 5,
+      "priority": "p1",
+      "description": "继续向下滚动，显示90天行动进度条和行动任务列表"
+    },
+    {
+      "id": 6,
+      "priority": "p2",
+      "description": "浏览器控制台无红色错误，无Resource load failed报错"
+    }
+  ]
+}

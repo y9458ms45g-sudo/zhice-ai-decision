@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，知识网络正常渲染出节点（≥10个），无白屏"},{"id":2,"priority":"p0","description":"向下滚动，信息板块卡片正常渲染（≥10张），内容填充正确"},{"id":3,"priority":"p1","description":"拖动一个节点后位置立即变化（乐观更新），不出现等待加载状态"},{"id":4,"priority":"p1","description":"编辑一张卡片内容，文字立即更新，保存状态指示器正常显示"},{"id":5,"priority":"p2","description":"页面建立SSE连接，控制台无SSE连接错误，无白屏"}]}

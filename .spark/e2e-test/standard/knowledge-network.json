@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，知识图谱正常加载，Canvas上显示多个果冻球节点和连线"},{"id":2,"priority":"p1","description":"单击某个节点，节点高亮且关联连线高亮显示"},{"id":3,"priority":"p1","description":"双击某个节点，弹出编辑弹窗，显示节点名称、描述、图标、颜色等字段"},{"id":4,"priority":"p1","description":"向下滚动页面，信息板块卡片可直接点击编辑，contenteditable生效"},{"id":5,"priority":"p2","description":"新增节点按钮存在，点击可以添加新节点"}]}

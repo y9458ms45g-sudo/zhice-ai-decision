@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "priority": "p0",
+      "description": "打开首页，显示欢迎界面（Hello~ Welcome to my world、智策标题、进入智策按钮），页面不白屏"
+    },
+    {
+      "id": 2,
+      "priority": "p1",
+      "description": "右上角有调色板形状的主题切换按钮"
+    },
+    {
+      "id": 3,
+      "priority": "p2",
+      "description": "控制台无红色错误，无Resource load failed报错"
+    }
+  ]
+}

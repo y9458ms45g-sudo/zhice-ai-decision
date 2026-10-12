@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，知识网络正常渲染出节点（≥10个），无白屏无报错"},{"id":2,"priority":"p0","description":"SSE连接建立成功，浏览器控制台输出'SSE连接已建立'，无反复重连警告"},{"id":3,"priority":"p1","description":"拖动节点位置立即变化（乐观更新），保存后无闪烁或跳回"},{"id":4,"priority":"p1","description":"向下滚动到信息板块，编辑卡片内容立即更新，保存指示器正常显示"},{"id":5,"priority":"p2","description":"移动端布局正常，卡片单列显示，节点可拖动"}]}

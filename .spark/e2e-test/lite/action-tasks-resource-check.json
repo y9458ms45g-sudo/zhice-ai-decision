@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，确认页面不白屏、无Resource load failed报错，知识网络画布可见"},{"id":2,"priority":"p0","description":"滚动到行动板块，确认任务列表卡片正常渲染，显示6条任务"},{"id":3,"priority":"p1","description":"首页概览卡片显示本周完成X项文案和粉色进度条"},{"id":4,"priority":"p1","description":"检查浏览器控制台无JavaScript报错，所有XHR/Fetch请求状态为2xx"}]}

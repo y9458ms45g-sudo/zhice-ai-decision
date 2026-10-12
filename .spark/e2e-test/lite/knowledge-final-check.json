@@ -1,0 +1,39 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "priority": "p0",
+      "description": "打开首页，页面不白屏，顶部有标题和主题切换按钮，中央知识网络画布可见"
+    },
+    {
+      "id": 2,
+      "priority": "p0",
+      "description": "画布上有多个彩色节点和连线，中心节点最大且突出"
+    },
+    {
+      "id": 3,
+      "priority": "p1",
+      "description": "点击右上角调色板图标按钮，弹出主题选择面板，显示粉色奶油和暗夜可爱两个选项"
+    },
+    {
+      "id": 4,
+      "priority": "p1",
+      "description": "点击暗夜可爱主题，页面背景变为深色，整体切换为暗色调"
+    },
+    {
+      "id": 5,
+      "priority": "p1",
+      "description": "向下滚动到信息卡片区域，显示多排果冻质感卡片，卡片有标题和内容"
+    },
+    {
+      "id": 6,
+      "priority": "p1",
+      "description": "继续滚动到行动任务区域，显示进度条和任务列表，任务有勾选框"
+    },
+    {
+      "id": 7,
+      "priority": "p2",
+      "description": "浏览器控制台无红色错误，无Resource load failed报错"
+    }
+  ]
+}

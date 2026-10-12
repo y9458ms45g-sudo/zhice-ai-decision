@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，确认导航栏出现「AI建议」魔法棒按钮"},{"id":2,"priority":"p1","description":"点击导航栏AI建议按钮，弹出果冻风格AI分析弹窗，显示加载动画"},{"id":3,"priority":"p0","description":"等待AI分析完成，弹窗中显示3张建议卡片，每张有标题和内容"},{"id":4,"priority":"p1","description":"点击「重新生成」按钮，重新触发AI分析并展示新的建议内容"},{"id":5,"priority":"p2","description":"点击弹窗遮罩或关闭按钮，弹窗关闭，回到主页面"}]}

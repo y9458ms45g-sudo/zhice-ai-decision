@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"游客体验按钮可进入首页"},{"id":2,"priority":"p0","description":"游客模式提示条和数据正常显示"},{"id":3,"priority":"p0","description":"游客模式编辑卡片并本地保存"},{"id":4,"priority":"p1","description":"游客模式注册后数据迁移到云端"}]}

@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "priority": "p0",
+      "description": "打开首页，不白屏，能看到智策大标题和进入智策按钮"
+    },
+    {
+      "id": 2,
+      "priority": "p0",
+      "description": "页面右上角有调色板图标主题切换按钮"
+    },
+    {
+      "id": 3,
+      "priority": "p1",
+      "description": "浏览器控制台无红色错误，无Resource load failed"
+    }
+  ]
+}

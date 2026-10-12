@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"首页加载完成，不白屏，能看到'智策'标题"},{"id":2,"priority":"p0","description":"滚动到基础画像板块，教育背景卡片显示'本科新闻学'"},{"id":3,"priority":"p1","description":"实践经历卡片显示数据库中的内容"},{"id":4,"priority":"p1","description":"技术栈卡片显示正确内容"},{"id":5,"priority":"p2","description":"验证/api/knowledge/cards接口200且返回education字段值为'本科新闻学'"}]}

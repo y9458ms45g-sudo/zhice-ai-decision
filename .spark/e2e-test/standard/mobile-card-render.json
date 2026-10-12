@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"390px视口下首页加载完成，不白屏"},{"id":2,"priority":"p0","description":"390px视口下滚动到基础画像，教育背景卡片显示'本科新闻学'"},{"id":3,"priority":"p1","description":"390px视口下实践经历、技术栈卡片内容正确"},{"id":4,"priority":"p1","description":"390px视口下卡片内容区是textarea标签且value等于接口返回值"},{"id":5,"priority":"p2","description":"/api/knowledge/cards接口200且education='本科新闻学'"}]}

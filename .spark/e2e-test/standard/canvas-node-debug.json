@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页滚动到画布区域，预期Canvas上至少可见5个彩色节点且节点上有emoji图标和文字标签"},{"id":2,"priority":"p0","description":"页面加载完成后，预期浏览器控制台无JS红色报错且图谱数据接口返回成功"},{"id":3,"priority":"p1","description":"导航栏logo和欢迎页大标题均显示「智策」文字，副标题显示「个人 AI 决策助手」"}]}

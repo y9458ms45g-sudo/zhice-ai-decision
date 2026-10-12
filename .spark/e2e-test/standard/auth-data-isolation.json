@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"admin登录后看到13节点/16卡片/48任务"},{"id":2,"priority":"p0","description":"注册新用户test2并登录成功"},{"id":3,"priority":"p0","description":"新用户数据:节点/卡片/任务初始状态"},{"id":4,"priority":"p0","description":"新用户建任务'测试任务'成功"},{"id":5,"priority":"p0","description":"数据隔离:admin看不到test2的测试任务"},{"id":6,"priority":"p0","description":"test2再登录能看到自己的测试任务"}]}

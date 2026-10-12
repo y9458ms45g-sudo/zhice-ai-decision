@@ -1,0 +1,24 @@
+{
+  "cases": [
+    {
+      "id": 1,
+      "priority": "p0",
+      "description": "首页正常加载：有调色板按钮，画布节点可见"
+    },
+    {
+      "id": 2,
+      "priority": "p0",
+      "description": "点调色板弹出主题面板，含粉色奶油和暗夜可爱两项"
+    },
+    {
+      "id": 3,
+      "priority": "p0",
+      "description": "点暗夜可爱后背景明显变深（深色主题）"
+    },
+    {
+      "id": 4,
+      "priority": "p0",
+      "description": "再点调色板选粉色奶油，背景变回浅色（奶油粉色系）"
+    }
+  ]
+}
