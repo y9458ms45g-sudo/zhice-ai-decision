@@ -10,7 +10,9 @@
 ![NestJS](https://img.shields.io/badge/nestjs-10-e0234e.svg)
 ![TypeScript](https://img.shields.io/badge/typescript-5-3178c6.svg)
 
-[**在线体验**](#) · [**功能特性**](#功能特性) · [**快速开始**](#快速开始) · [**API文档**](docs/API.md) · [**贡献指南**](CONTRIBUTING.md)
+[![Live Demo](https://img.shields.io/badge/🚀_在线体验-立即试用-FF6B9D?style=for-the-badge)](https://4m5spt2uqph0w.doubaoapps.com/app/app_17f4sydgrtj)
+
+[**在线体验**](https://4m5spt2uqph0w.doubaoapps.com/app/app_17f4sydgrtj) · [**功能特性**](#功能特性) · [**快速开始**](#快速开始) · [**API文档**](docs/API.md) · [**贡献指南**](CONTRIBUTING.md)
 
 </div>
 
