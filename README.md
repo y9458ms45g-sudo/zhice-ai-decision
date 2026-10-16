@@ -126,6 +126,63 @@ npm run test
 | `VOLCENGINE_API_KEY` | 火山引擎方舟 API Key | AI建议功能需要 |
 | `VOLCENGINE_MODEL` | 推理接入点 ID（ep-xxx） | AI建议功能需要 |
 
+## 故障排查
+
+### 常见问题：登录后提示「获取知识图谱失败」
+
+这是本项目最容易出现的问题，按以下优先级排查：
+
+#### 第一步：看浏览器 F12 → Network 里的真实状态码
+
+| 状态码 | 含义 | 排查方向 |
+|--------|------|----------|
+| **401** | 鉴权失败 | token 未带上、JWT_SECRET 不一致、token 已过期 |
+| **403** | 权限不足 | 账号被禁用、用户 ID 不匹配 |
+| **200 但画布空白** | 数据解析/渲染问题 | 节点坐标为 NaN、边引用了不存在的节点 |
+| **500** | 后端错误 | 数据库连接失败、SQL 异常、ORM 字段不匹配 |
+| **504** | 网关超时 | 数据量过大、后端处理慢、网关超时设置过短 |
+| **CORS / (failed)** | 跨域/网络 | 前后端域名不一致、浏览器插件拦截、弱网 |
+
+#### 第二步：按层定位
+
+**前端层（最常见）**
+- **拦截器时序问题**：axios request interceptor 必须在模块加载时就注册，不能放在组件 useEffect 里——否则页面首次渲染发请求时拦截器还没生效，`Authorization` 头漏带。
+- **Bearer 格式错误**：header 必须是 `Bearer <token>`，`Bearer` 后面有一个空格，不能写成 `Bearer<token>`。
+- **localStorage 缓存旧代码**：改完前端后按 `Ctrl+F5` 硬刷新，清掉旧 bundle。
+- **脏数据渲染崩溃**：后端返回 200，但节点坐标是 `null` 或 `NaN`，Canvas 渲染抛异常。
+
+**后端层**
+- **JWT_SECRET 不一致**：生成 token 和校验 token 用了不同的密钥，必然 401。
+- **空数据返回 500**：用户没有任何节点时，后端查询抛异常而不是返回 `{nodes:[], edges:[]}`。
+- **数据库连接池耗尽**：高并发或连接泄漏时，查询直接超时。
+
+**数据库层**
+- 表没建成功：检查 migrations 是否跑通，`nodes` / `edges` / `users` 表是否存在。
+- 字段名和 ORM model 不一致：Drizzle schema 改了但没重新生成 migration。
+
+**快速验证后端是否正常**
+
+```bash
+# 1. 登录拿 token
+curl -X POST http://localhost:3001/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@zhice.com","password":"zhice2026"}'
+
+# 2. 用 token 请求图谱
+curl http://localhost:3001/api/knowledge/graph \
+  -H "Authorization: Bearer <上一步返回的token>"
+```
+
+如果 curl 直接请求能返回 200 + 数据，问题 100% 在前端（拦截器/token 携带/渲染）。
+
+### 其他常见问题
+
+| 问题 | 解决 |
+|------|------|
+| 登录成功但不跳转主界面 | 用 `window.location.replace('/')` 强制刷新跳转，不要用 React Router 的 navigate（路由守卫时序问题） |
+| AI 建议不返回 | 检查 `VOLCENGINE_API_KEY` 和 `VOLCENGINE_MODEL`（推理接入点 ID）是否配置正确，接入点是否处于「已开通」状态 |
+| 记住密码不生效 | 确认 `remembered_email` / `remembered_password` 的 localStorage key 和 token 的 key 不冲突 |
+
 ## 路线图
 
 - [x] 知识神经网络可视化
