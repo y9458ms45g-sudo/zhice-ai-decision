@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"未登录访问首页应跳转登录页而非白屏"},{"id":2,"priority":"p0","description":"游客模式进入首页页面正常显示"},{"id":3,"priority":"p0","description":"登录后仪表盘页面正常显示"}]}

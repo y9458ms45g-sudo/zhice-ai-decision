@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { DRIZZLE_DATABASE, type PostgresJsDatabase } from '@lark-apaas/fullstack-nestjs-core';
 import { eq } from 'drizzle-orm';
 import { cardContents } from '@server/database/schema';
-import type { CardContent } from '@shared/api.interface';
+import type { CardContent, ProfileGraphResponse, ProfileStageData, ProfileCard } from '@shared/api.interface';
 import { HistoryService } from './history.service';
 
 @Injectable()
@@ -106,5 +106,73 @@ export class CardService {
       userId,
     });
     return results;
+  }
+
+  async getProfileGraph(userId: number): Promise<ProfileGraphResponse> {
+    const cards = await this.getCards(userId);
+    const contentMap = new Map<string, string>();
+    cards.forEach((c: CardContent): void => {
+      contentMap.set(c.sectionKey, c.content);
+    });
+
+    const parseProficiency = (content: string): number | undefined => {
+      const match = content.match(/熟练度[：:]*\s*[★☆]+/);
+      if (!match) return undefined;
+      const stars = match[0].match(/★/g);
+      return stars ? stars.length : undefined;
+    };
+
+    const makeCard = (
+      sectionKey: string,
+      title: string,
+      emoji: string,
+      color: string,
+    ): ProfileCard => {
+      const content = contentMap.get(sectionKey) ?? '';
+      return {
+        sectionKey,
+        title,
+        emoji,
+        color,
+        content: content || '待完善',
+        proficiency: parseProficiency(content),
+      };
+    };
+
+    const stages: ProfileStageData[] = [
+      {
+        stage: 'foundation',
+        label: '基础能力',
+        emoji: '🌱',
+        gradient: 'linear-gradient(135deg, #FFC9DE, #FF9DBB)',
+        cards: [
+          makeCard('education', '教育背景', '🎓', 'var(--blush)'),
+          makeCard('experience', '实践经历', '💼', 'var(--powder)'),
+          makeCard('techstack', '技术栈', '🛠️', 'var(--mint)'),
+          makeCard('constraints', '关键约束', '🎯', 'var(--lav)'),
+        ],
+      },
+      {
+        stage: 'deep',
+        label: '专业深耕',
+        emoji: '🌊',
+        gradient: 'linear-gradient(135deg, #B8E8E0, #84D3B6)',
+        cards: [
+          makeCard('deep_backend', '后端开发', '⚙️', 'var(--mint)'),
+          makeCard('deep_fullstack', '深度全栈', '🧩', 'var(--lav)'),
+          makeCard('deep_ai_pm', 'AI产品经理', '🤖', 'var(--butter)'),
+          makeCard('deep_frontend', 'FED前端', '🎨', 'var(--peach)'),
+        ],
+      },
+      {
+        stage: 'future',
+        label: '未来方向',
+        emoji: '🚀',
+        gradient: 'linear-gradient(135deg, #FFE7A8, #FFD36B)',
+        cards: [],
+      },
+    ];
+
+    return { stages };
   }
 }

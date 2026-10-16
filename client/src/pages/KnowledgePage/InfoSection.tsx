@@ -45,24 +45,10 @@ interface SectionConfig {
 
 const SECTIONS: SectionConfig[] = [
   {
-    sectionId: 'profile',
-    title: '基础画像',
-    emoji: '🌸',
-    num: '01',
-    numColor: 'linear-gradient(135deg, #FFC9DE, #FF9DBB)',
-    gridClass: 'grid-cols-1 md:grid-cols-2',
-    cards: [
-      { sectionKey: 'education', title: '教育背景', emoji: '🎓', color: 'var(--blush)', tag: 'profile' },
-      { sectionKey: 'experience', title: '实践经历', emoji: '💼', color: 'var(--powder)', tag: 'profile' },
-      { sectionKey: 'techstack', title: '技术栈', emoji: '🛠️', color: 'var(--mint)', tag: 'profile' },
-      { sectionKey: 'constraints', title: '关键约束', emoji: '🎯', color: 'var(--lav)', tag: 'profile' },
-    ],
-  },
-  {
     sectionId: 'strategy',
     title: '核心战略',
     emoji: '🚀',
-    num: '02',
+    num: '01',
     numColor: 'linear-gradient(135deg, #FFE7A8, #FFD36B)',
     gridClass: 'grid-cols-1 md:grid-cols-3',
     cards: [
@@ -75,27 +61,13 @@ const SECTIONS: SectionConfig[] = [
     sectionId: 'monetize',
     title: '快速变现方向',
     emoji: '💰',
-    num: '03',
+    num: '02',
     numColor: 'linear-gradient(135deg, #FFD2B5, #FFAE81)',
     gridClass: 'grid-cols-1 md:grid-cols-3',
     cards: [
       { sectionKey: 'monetize_novel', title: 'AIGC小说', emoji: '📖', color: 'var(--blush-d)', tag: 'AIGC' },
       { sectionKey: 'monetize_editing', title: '剪辑接单', emoji: '🎬', color: 'var(--blush)', tag: 'video' },
       { sectionKey: 'monetize_media', title: '自媒体', emoji: '📱', color: 'var(--powder)', tag: 'content' },
-    ],
-  },
-  {
-    sectionId: 'deep',
-    title: '深耕领域',
-    emoji: '🌊',
-    num: '04',
-    numColor: 'linear-gradient(135deg, #B8E8E0, #84D3B6)',
-    gridClass: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
-    cards: [
-      { sectionKey: 'deep_backend', title: '后端开发', emoji: '⚙️', color: 'var(--mint)', tag: 'dev' },
-      { sectionKey: 'deep_fullstack', title: '深度全栈', emoji: '🧩', color: 'var(--lav)', tag: 'full' },
-      { sectionKey: 'deep_ai_pm', title: 'AI产品经理', emoji: '🤖', color: 'var(--butter)', tag: 'ai' },
-      { sectionKey: 'deep_frontend', title: 'FED前端', emoji: '🎨', color: 'var(--peach)', tag: 'ui' },
     ],
   },
 ];
@@ -607,7 +579,7 @@ const InfoSection: React.FC = () => {
             className="kb-section-num"
             style={{ background: 'linear-gradient(135deg, #B9E7D4, #84D3B6)' }}
           >
-            05 / 📊
+            03 / 📊
           </span>
           <h2 style={{ margin: 0 }}>90天行动进度</h2>
           <svg
@@ -623,19 +595,7 @@ const InfoSection: React.FC = () => {
         <ActionTasksList />
       </div>
 
-      <div className="kb-lace-divider" style={{ marginBottom: 28, marginTop: 24 }}>
-        <span className="kb-ld-line" />
-        <svg
-          className="kb-ld-icon kb-sm"
-          viewBox="0 0 120 84"
-          aria-hidden="true"
-        >
-          <use href="#i-bow" />
-        </svg>
-        <span className="kb-ld-line" />
-      </div>
-
-      {SECTIONS.slice(3).map((section: SectionConfig): React.ReactNode => (
+       {SECTIONS.slice(3).map((section: SectionConfig): React.ReactNode => (
         <div key={section.sectionId}>
           <div
             id={section.sectionId}

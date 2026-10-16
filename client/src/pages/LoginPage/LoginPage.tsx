@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import { login, register, saveAuth } from '@client/src/api/auth';
@@ -9,13 +9,67 @@ import type { AuthUser } from '@shared/api.interface';
 type TabType = 'login' | 'register';
 
 const LoginPage: React.FC = () => {
-  const navigate = useNavigate();
   const [tab, setTab] = useState<TabType>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [nickname, setNickname] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [rememberPassword, setRememberPassword] = useState(false);
+  const [savedEmail, setSavedEmail] = useState('');
+
+  const REMEMBER_EMAIL_KEY = 'remembered_email';
+  const REMEMBER_PASSWORD_KEY = 'remembered_password';
+  const REMEMBER_ME_FLAG_KEY = 'remember_me';
+  const LEGACY_EMAIL_KEY = 'zhice_remember_email';
+
+  useEffect(() => {
+    try {
+      const storedEmail = localStorage.getItem(REMEMBER_EMAIL_KEY)
+        ?? localStorage.getItem(LEGACY_EMAIL_KEY);
+      const storedPassword = localStorage.getItem(REMEMBER_PASSWORD_KEY);
+      const rememberFlag = localStorage.getItem(REMEMBER_ME_FLAG_KEY) === 'true';
+
+      if (storedEmail) {
+        setSavedEmail(storedEmail);
+        setEmail(storedEmail);
+        setRememberMe(true);
+      }
+      if (storedPassword && rememberFlag) {
+        setPassword(storedPassword);
+        setRememberPassword(true);
+      }
+    } catch {
+      // 忽略 localStorage 读取失败
+    }
+  }, []);
+
+  const clearSavedEmail = useCallback(() => {
+    try {
+      localStorage.removeItem(REMEMBER_EMAIL_KEY);
+      localStorage.removeItem(REMEMBER_PASSWORD_KEY);
+      localStorage.removeItem(REMEMBER_ME_FLAG_KEY);
+      localStorage.removeItem(LEGACY_EMAIL_KEY);
+    } catch {
+      // 忽略
+    }
+    setSavedEmail('');
+    setRememberMe(false);
+    setRememberPassword(false);
+    setEmail('');
+    setPassword('');
+    toast.success('已清除记住的账号');
+  }, []);
+
+  const handleQuickLogin = useCallback(() => {
+    if (!savedEmail) return;
+    setEmail(savedEmail);
+    setRememberMe(true);
+    setPassword('');
+    setTab('login');
+    setError('');
+  }, [savedEmail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,14 +91,43 @@ const LoginPage: React.FC = () => {
         : await register({ email, password, nickname: nickname || undefined });
 
       await saveAuth(data.token, data.user as AuthUser);
+
+      if (rememberMe && tab === 'login') {
+        try {
+          localStorage.setItem(REMEMBER_EMAIL_KEY, email);
+          localStorage.removeItem(LEGACY_EMAIL_KEY);
+          setSavedEmail(email);
+          if (rememberPassword) {
+            localStorage.setItem(REMEMBER_PASSWORD_KEY, password);
+            localStorage.setItem(REMEMBER_ME_FLAG_KEY, 'true');
+          } else {
+            localStorage.removeItem(REMEMBER_PASSWORD_KEY);
+            localStorage.removeItem(REMEMBER_ME_FLAG_KEY);
+          }
+        } catch {
+          // 忽略 localStorage 写入失败
+        }
+      } else if (!rememberMe && savedEmail && tab === 'login') {
+        try {
+          localStorage.removeItem(REMEMBER_EMAIL_KEY);
+          localStorage.removeItem(REMEMBER_PASSWORD_KEY);
+          localStorage.removeItem(REMEMBER_ME_FLAG_KEY);
+          localStorage.removeItem(LEGACY_EMAIL_KEY);
+        } catch {
+          // 忽略
+        }
+        setSavedEmail('');
+      }
+
       toast.success(tab === 'login' ? '登录成功' : '注册成功');
-      navigate('/');
+      window.location.replace('/');
     } catch (err: unknown) {
       logger.error('认证失败', err);
       const msg = (err as { response?: { data?: { error?: { message?: string } } } })
         .response?.data?.error?.message
-        || (tab === 'login' ? '登录失败，请检查邮箱和密码' : '注册失败，请稍后重试');
+        || (tab === 'login' ? '邮箱或密码错误，请重试' : '注册失败，请稍后重试');
       setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -128,7 +211,18 @@ const LoginPage: React.FC = () => {
           )}
 
           <div>
-            <label className="block text-sm text-gray-500 mb-1.5 ml-1">邮箱</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm text-gray-500 ml-1">邮箱</label>
+              {savedEmail && tab === 'login' && (
+                <button
+                  type="button"
+                  onClick={clearSavedEmail}
+                  className="text-xs text-gray-400 hover:text-pink-400 transition-colors flex items-center gap-1"
+                >
+                  <span>✕</span> 清除记住的账号
+                </button>
+              )}
+            </div>
             <input
               type="email"
               value={email}
@@ -140,7 +234,9 @@ const LoginPage: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm text-gray-500 mb-1.5 ml-1">密码</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm text-gray-500 ml-1">密码</label>
+            </div>
             <input
               type="password"
               value={password}
@@ -149,7 +245,87 @@ const LoginPage: React.FC = () => {
               className="w-full px-4 py-3 rounded-2xl bg-white/80 border border-pink-100 text-gray-700 text-sm focus:outline-none focus:border-pink-300 transition-colors placeholder:text-gray-300"
               style={{ boxShadow: 'inset 0 2px 4px rgba(255, 180, 200, 0.1)' }}
             />
+            {tab === 'login' && (
+              <div className="text-right mt-1.5">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-pink-400 hover:text-pink-500 font-medium transition-colors"
+                >
+                  忘记密码？
+                </Link>
+              </div>
+            )}
           </div>
+
+          {tab === 'login' && (
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setRememberMe(checked);
+                    if (!checked) setRememberPassword(false);
+                  }}
+                  className="peer sr-only"
+                />
+                <span
+                  className="w-4 h-4 rounded-md border border-pink-200 flex items-center justify-center transition-all peer-checked:border-pink-300"
+                  style={{
+                    background: rememberMe
+                      ? 'linear-gradient(135deg, #FFB8C9 0%, #FFC9DE 100%)'
+                      : 'white',
+                    boxShadow: rememberMe
+                      ? '0 2px 6px rgba(255, 180, 200, 0.4), inset 0 1px 2px rgba(255,255,255,0.6)'
+                      : 'inset 0 1px 2px rgba(255, 180, 200, 0.1)',
+                  }}
+                >
+                  {rememberMe && (
+                    <span className="text-white text-xs font-bold leading-none">✓</span>
+                  )}
+                </span>
+                <span className="text-xs text-gray-500">记住账号</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberPassword}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    setRememberPassword(checked);
+                    if (checked) setRememberMe(true);
+                  }}
+                  className="peer sr-only"
+                />
+                <span
+                  className="w-4 h-4 rounded-md border border-pink-200 flex items-center justify-center transition-all peer-checked:border-pink-300"
+                  style={{
+                    background: rememberPassword
+                      ? 'linear-gradient(135deg, #FFB8C9 0%, #FFC9DE 100%)'
+                      : 'white',
+                    boxShadow: rememberPassword
+                      ? '0 2px 6px rgba(255, 180, 200, 0.4), inset 0 1px 2px rgba(255,255,255,0.6)'
+                      : 'inset 0 1px 2px rgba(255, 180, 200, 0.1)',
+                  }}
+                >
+                  {rememberPassword && (
+                    <span className="text-white text-xs font-bold leading-none">✓</span>
+                  )}
+                </span>
+                <span className="text-xs text-gray-500">记住密码</span>
+              </label>
+              {savedEmail && savedEmail !== email && (
+                <button
+                  type="button"
+                  onClick={handleQuickLogin}
+                  className="text-xs text-pink-400 hover:text-pink-500 font-medium transition-colors ml-auto"
+                >
+                  快速登录
+                </button>
+              )}
+            </div>
+          )}
 
           {error && (
             <p className="text-xs text-red-400 text-center px-1">{error}</p>
@@ -173,6 +349,11 @@ const LoginPage: React.FC = () => {
               : tab === 'login' ? '登录' : '创建账号'
             }
           </button>
+          {tab === 'login' && (
+            <p className="text-xs text-gray-400 text-center mt-2">
+              密码仅保存在本设备浏览器中
+            </p>
+          )}
         </form>
 
         <p className="text-xs text-gray-400 text-center mt-6">
@@ -195,7 +376,7 @@ const LoginPage: React.FC = () => {
           type="button"
           onClick={() => {
             enterGuestMode();
-            navigate('/');
+            window.location.replace('/');
           }}
           className="w-full py-3 mt-4 rounded-2xl font-medium text-sm transition-all duration-200 active:scale-95"
           style={{

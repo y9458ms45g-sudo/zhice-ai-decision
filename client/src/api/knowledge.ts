@@ -25,7 +25,12 @@ import type {
   OperationHistoryResponse,
   CreateOperationHistoryRequest,
   DashboardStats,
-} from '@shared/api.interface';
+  Insight,
+  ExtractedInsight,
+  CreateInsightRequest,
+   InsightSourceType,
+   ProfileGraphResponse,
+ } from '@shared/api.interface';
 
 export async function getGraph(): Promise<KnowledgeGraphData> {
   if (isGuestMode()) {
@@ -49,6 +54,19 @@ export async function initGraph(): Promise<KnowledgeGraphData> {
     return res.data;
   } catch (error) {
     logger.error('初始化知识图谱失败', error);
+    throw error;
+  }
+}
+
+export async function resetGraph(): Promise<KnowledgeGraphData> {
+  if (isGuestMode()) {
+    return guestStore.initGraph();
+  }
+  try {
+    const res = await axiosForBackend.post('/api/knowledge/reset');
+    return res.data;
+  } catch (error) {
+    logger.error('重置知识图谱失败', error);
     throw error;
   }
 }
@@ -129,6 +147,72 @@ export async function getCards(): Promise<CardContent[]> {
   }
 }
 
+export async function getProfileGraph(): Promise<ProfileGraphResponse> {
+  if (isGuestMode()) {
+    const cards: CardContent[] = await guestStore.getCards();
+    const contentMap = new Map<string, string>();
+    cards.forEach((c: CardContent): void => {
+      contentMap.set(c.sectionKey, c.content);
+    });
+    const parseProficiency = (content: string): number | undefined => {
+      const match = content.match(/熟练度[：:]*\s*[★☆]+/);
+      if (!match) return undefined;
+      const stars = match[0].match(/★/g);
+      return stars ? stars.length : undefined;
+    };
+    const makeCard = (sectionKey: string, title: string, emoji: string, color: string) => ({
+      sectionKey,
+      title,
+      emoji,
+      color,
+      content: contentMap.get(sectionKey) || '待完善',
+      proficiency: parseProficiency(contentMap.get(sectionKey) || ''),
+    });
+    return {
+      stages: [
+        {
+          stage: 'foundation' as const,
+          label: '基础能力',
+          emoji: '🌱',
+          gradient: 'linear-gradient(135deg, #FFC9DE, #FF9DBB)',
+          cards: [
+            makeCard('education', '教育背景', '🎓', 'var(--blush)'),
+            makeCard('experience', '实践经历', '💼', 'var(--powder)'),
+            makeCard('techstack', '技术栈', '🛠️', 'var(--mint)'),
+            makeCard('constraints', '关键约束', '🎯', 'var(--lav)'),
+          ],
+        },
+        {
+          stage: 'deep' as const,
+          label: '专业深耕',
+          emoji: '🌊',
+          gradient: 'linear-gradient(135deg, #B8E8E0, #84D3B6)',
+          cards: [
+            makeCard('deep_backend', '后端开发', '⚙️', 'var(--mint)'),
+            makeCard('deep_fullstack', '深度全栈', '🧩', 'var(--lav)'),
+            makeCard('deep_ai_pm', 'AI产品经理', '🤖', 'var(--butter)'),
+            makeCard('deep_frontend', 'FED前端', '🎨', 'var(--peach)'),
+          ],
+        },
+        {
+          stage: 'future' as const,
+          label: '未来方向',
+          emoji: '🚀',
+          gradient: 'linear-gradient(135deg, #FFE7A8, #FFD36B)',
+          cards: [],
+        },
+      ],
+    };
+  }
+  try {
+    const res = await axiosForBackend.get('/api/knowledge/profile-graph');
+    return res.data;
+  } catch (error) {
+    logger.error('获取综合画像图谱失败', error);
+    throw error;
+  }
+}
+
 export async function updateCard(sectionKey: string, content: string): Promise<CardContent> {
   if (isGuestMode()) {
     return guestStore.updateCard(sectionKey, content);
@@ -164,8 +248,16 @@ export async function analyzeKnowledge(): Promise<AiAnalyzeResponse> {
     return guestStore.analyzeKnowledge();
   }
   try {
-    const res = await axiosForBackend.post('/api/knowledge/analyze');
-    return res.data;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 28000);
+    try {
+      const res = await axiosForBackend.post('/api/knowledge/analyze', {}, {
+        signal: controller.signal,
+      });
+      return res.data;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   } catch (error) {
     logger.error('AI分析失败', error);
     throw error;
@@ -193,19 +285,28 @@ export function subscribeKnowledgeChanges(
     const controller = new AbortController();
     abortController = controller;
     const token = localStorage.getItem('zhice_token');
+    const csrfToken = document.cookie
+      .split('; ')
+      .find((c: string): boolean => c.startsWith('suda-csrf-token='))
+      ?.split('=')[1];
 
     fetch(url, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         Accept: 'text/event-stream',
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(csrfToken ? { 'X-Suda-Csrf-Token': csrfToken } : {}),
       },
       signal: controller.signal,
     })
-      .then((res) => {
-        if (!res.ok || !res.body) {
-          throw new Error(`SSE连接失败: ${res.status}`);
-        }
+       .then((res) => {
+         if (res.status === 401) {
+           throw new Error('SSE_UNAUTHORIZED');
+         }
+         if (!res.ok || !res.body) {
+           throw new Error(`SSE连接失败: ${res.status}`);
+         }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buffer = '';
@@ -233,18 +334,21 @@ export function subscribeKnowledgeChanges(
             }
             read();
           }).catch((err) => {
-            if (closed || err?.name === 'AbortError') return;
-            logger.warn('SSE连接断开，3秒后重连...', err);
+             if (closed || err?.name === 'AbortError') return;
+            logger.debug('SSE连接断开，3秒后重连', err?.message || '');
             setTimeout(connect, 3000);
           });
         };
         read();
       })
-      .catch((err) => {
-        if (closed || err?.name === 'AbortError') return;
-        logger.warn('SSE连接失败，3秒后重连...', err);
-        setTimeout(connect, 3000);
-      });
+       .catch((err) => {
+         if (closed || err?.name === 'AbortError') return;
+         if (err?.message === 'SSE_UNAUTHORIZED') {
+           return;
+         }
+         logger.debug('SSE连接失败，3秒后重试', err?.message || '');
+         setTimeout(connect, 3000);
+       });
   };
 
   connect();
@@ -364,4 +468,102 @@ export async function createOperationHistory(
     return guestStore.createOperationHistory();
   }
   await axiosForBackend.post('/api/knowledge/operation-history', dto);
+}
+
+// --- Insights ---
+
+export async function extractInsight(
+  content: string,
+  sourceType?: InsightSourceType,
+  signal?: AbortSignal,
+): Promise<ExtractedInsight> {
+  if (isGuestMode()) {
+    return {
+      title: '示例观点标题',
+      summary: '这是一段示例摘要内容，展示AI提取后的核心观点。',
+      counterIntuitive: '反直觉的点是看似简单的事情其实很复杂。',
+      applicableScenario: '适用于学习和工作中的决策场景。',
+      actionItem: '立即尝试并记录反馈。',
+      credibility: 'medium',
+    };
+  }
+  try {
+    const res = await axiosForBackend.post(
+      '/api/knowledge/insights/extract',
+      { content, sourceType },
+      { signal, timeout: 45000 },
+    );
+    return res.data;
+  } catch (error) {
+    logger.error('提取观点失败', error);
+    throw error;
+  }
+}
+
+export async function createInsight(dto: CreateInsightRequest): Promise<Insight> {
+  if (isGuestMode()) {
+    return {
+      id: `insight_${Date.now()}`,
+      ...dto,
+      createdAt: new Date().toISOString(),
+    };
+  }
+  try {
+    const res = await axiosForBackend.post('/api/knowledge/insights', dto);
+    return res.data;
+  } catch (error) {
+    logger.error('创建观点失败', error);
+    throw error;
+  }
+}
+
+export async function getInsights(): Promise<Insight[]> {
+  if (isGuestMode()) {
+    return [];
+  }
+  try {
+    const res = await axiosForBackend.get('/api/knowledge/insights');
+    return res.data;
+  } catch (error) {
+    logger.error('获取观点列表失败', error);
+    throw error;
+  }
+}
+
+export async function linkInsightNode(
+  id: string,
+  linkedNodeId?: string,
+): Promise<Insight> {
+  if (isGuestMode()) {
+    return {
+      id,
+      title: '',
+      originalContent: '',
+      sourceType: 'other',
+      createdAt: new Date().toISOString(),
+      linkedNodeId,
+    };
+  }
+  try {
+    const res = await axiosForBackend.patch(
+      `/api/knowledge/insights/${id}/link`,
+      { linkedNodeId },
+    );
+    return res.data;
+  } catch (error) {
+    logger.error('关联节点失败', error);
+    throw error;
+  }
+}
+
+export async function deleteInsight(id: string): Promise<void> {
+  if (isGuestMode()) {
+    return;
+  }
+  try {
+    await axiosForBackend.delete(`/api/knowledge/insights/${id}`);
+  } catch (error) {
+    logger.error('删除观点失败', error);
+    throw error;
+  }
 }

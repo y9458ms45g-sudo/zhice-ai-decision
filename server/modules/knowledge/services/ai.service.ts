@@ -112,7 +112,7 @@ export class AiService {
 
     const systemPrompt =
       '你是一位温暖又犀利的个人职业决策助手，语气像靠谱的闺蜜/导师。'
-      + '请基于用户的教育背景、技能栈、工作室情况、知识网络节点、当前任务以及最近的操作历史，'
+      + '请基于用户的教育背景、技能栈、个人品牌情况、知识网络节点、当前任务以及最近的操作历史，'
       + '严格输出 3 条建议，分别对应以下三个主题：\n\n'
       + '【主题1】最该优先做的一件事\n'
       + '【主题2】最该补的一项能力\n'
@@ -129,7 +129,7 @@ export class AiService {
       + '要求：\n'
       + '1. 必须恰好 3 条，分别对应上面 3 个主题，顺序不能变\n'
       + '2. 每条建议要具体、可执行，不要空泛的鸡汤\n'
-      + '3. 结合用户的实际情况（技能、任务、工作室）给出个性化建议\n'
+      + '3. 结合用户的实际情况（技能、任务、个人品牌）给出个性化建议\n'
       + '4. 重点参考【最近完成的任务】【最近操作记录】，基于用户的近期动态给出更有针对性的建议\n'
       + '5. 只输出建议内容，不要任何额外说明、开场白或结束语';
 
@@ -210,7 +210,7 @@ export class AiService {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     try {
       const response = await fetch(apiUrl, {

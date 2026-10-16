@@ -21,6 +21,29 @@ export interface CardContent {
   content: string;
 }
 
+export type ProfileStage = 'foundation' | 'deep' | 'future';
+
+export interface ProfileCard {
+  sectionKey: string;
+  title: string;
+  emoji: string;
+  color: string;
+  content: string;
+  proficiency?: number;
+}
+
+export interface ProfileStageData {
+  stage: ProfileStage;
+  label: string;
+  emoji: string;
+  gradient: string;
+  cards: ProfileCard[];
+}
+
+export interface ProfileGraphResponse {
+  stages: ProfileStageData[];
+}
+
 export type ActionTaskStatus = 'todo' | 'in_progress' | 'done';
 
 export type ActionTaskType = 'learning' | 'job_hunting' | 'money_making';
@@ -145,6 +168,12 @@ export interface UserStatsResponse {
   lastAiSuggestionAt: string | null;
 }
 
+export interface TaskTypeDistribution {
+  learning: number;
+  job_hunting: number;
+  money_making: number;
+}
+
 export interface DashboardStats {
   totalNodes: number;
   totalEdges: number;
@@ -156,6 +185,11 @@ export interface DashboardStats {
   todayActivity: number;
   weeklyProgress: number;
   weeklyTaskCounts: DailyTaskCount[];
+  weekCompletedTasks: number;
+  streakDays: number;
+  lastAiSuggestionAt: string | null;
+  taskTypeDistribution: TaskTypeDistribution;
+  weekOverWeekChange: number;
 }
 
 export interface DailyTaskCount {
@@ -224,4 +258,75 @@ export interface LoginRequest {
 export interface AuthResponse {
   token: string;
   user: AuthUser;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  success: boolean;
+  message: string;
+  resetToken?: string;
+  resetUrl?: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
+  success: boolean;
+  message: string;
+}
+
+export type InsightSourceType = 'douyin' | 'xiaohongshu' | 'zhihu' | 'other';
+export type InsightCredibility = 'high' | 'medium' | 'low';
+
+export interface Insight {
+  id: string;
+  title: string;
+  originalContent: string;
+  summary?: string;
+  counterIntuitive?: string;
+  applicableScenario?: string;
+  actionItem?: string;
+  credibility?: InsightCredibility;
+  sourceType: InsightSourceType;
+  linkedNodeId?: string;
+  createdAt: string;
+}
+
+export interface ExtractInsightRequest {
+  content: string;
+  sourceType?: InsightSourceType;
+}
+
+export interface ExtractedInsight {
+  title: string;
+  summary: string;
+  counterIntuitive: string;
+  applicableScenario: string;
+  actionItem: string;
+  credibility: InsightCredibility;
+}
+
+export interface CreateInsightRequest {
+  title: string;
+  originalContent: string;
+  summary?: string;
+  counterIntuitive?: string;
+  applicableScenario?: string;
+  actionItem?: string;
+  credibility?: InsightCredibility;
+  sourceType: InsightSourceType;
+}
+
+export interface LinkInsightNodeRequest {
+  linkedNodeId?: string;
+}
+
+export interface InsightListResponse {
+  items: Insight[];
 }

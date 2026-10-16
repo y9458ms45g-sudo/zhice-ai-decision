@@ -37,6 +37,10 @@ export class JwtAuthGuard implements CanActivate {
         throw new UnauthorizedException('token无效');
       }
       req.user = payload;
+      (req as Request & { userContext?: { userId: string; userType: string } }).userContext = {
+        userId: String(payload.user_id),
+        userType: 'employee',
+      };
       return true;
     } catch (err) {
       if (err instanceof UnauthorizedException) throw err;

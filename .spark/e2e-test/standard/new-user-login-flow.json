@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"打开首页，验证正确跳转到登录页"},{"id":2,"priority":"p0","description":"使用新注册账号登录，成功进入主界面并看到知识图谱节点"},{"id":3,"priority":"p1","description":"刷新页面后仍保持登录态，不被踢回登录页"},{"id":4,"priority":"p1","description":"页面无运行错误浮层，Console无红色报错"}]}

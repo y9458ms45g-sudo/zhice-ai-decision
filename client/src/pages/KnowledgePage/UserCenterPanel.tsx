@@ -1,10 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { X, Download, Trash2, Info, Settings, User, Check, BarChart2, Clock, Flame, Calendar, Sparkles, ChevronDown, Home } from 'lucide-react';
+import { X, Download, Trash2, Info, Settings, User, Check, BarChart2, Clock, Flame, Calendar, Sparkles, ChevronDown, Home, RotateCcw } from 'lucide-react';
 import { useTheme } from './ThemeContext';
 import type { ThemeName } from './theme';
 import { knowledgeApi, authApi } from '@client/src/api';
 import { isGuestMode } from '@client/src/api/guest-mode';
-import { useCardsQuery, useActionTasksQuery, useGraphQuery } from './useKnowledgeData';
+import { useCardsQuery, useActionTasksQuery, useGraphQuery, useResetGraphMutation } from './useKnowledgeData';
 import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import { toast } from 'sonner';
@@ -99,6 +99,7 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing'>('synced');
   const [clearConfirm, setClearConfirm] = useState(false);
   const [clearing, setClearing] = useState(false);
+  const [resetConfirm, setResetConfirm] = useState(false);
   const [stats, setStats] = useState<UserStatsResponse | null>(null);
   const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
   const [logsTotal, setLogsTotal] = useState(0);
@@ -231,6 +232,19 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
     }
   }, [queryClient, tasksQuery.data]);
 
+  const resetGraphMutation = useResetGraphMutation();
+
+  const handleResetGraph = useCallback(async () => {
+    try {
+      await resetGraphMutation.mutateAsync();
+      setResetConfirm(false);
+      toast.success('已重置知识图谱');
+    } catch (error) {
+      logger.error('重置知识图谱失败', error);
+      toast.error('重置失败，请重试');
+    }
+  }, [resetGraphMutation]);
+
   const handleClose = useCallback(() => {
     setActiveTab('home');
     setHistoryItems([]);
@@ -241,12 +255,12 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
 
   const handleLogout = useCallback(() => {
     if (isGuestMode()) {
-      navigate('/login', { replace: true });
+      window.location.replace('/login');
       return;
     }
     authApi.clearAuth();
     toast.success('已退出登录');
-    navigate('/login', { replace: true });
+    window.location.replace('/login');
   }, [navigate]);
 
   if (!open) return null;
@@ -311,9 +325,6 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
                     <div className="kb-uc-name">{user?.nickname || (isGuestMode() ? '游客用户' : '未命名用户')}</div>
                     <div className="kb-uc-identity">
                       {user?.email || (isGuestMode() ? '游客模式' : '未登录')}
-                    </div>
-                    <div className="kb-uc-quote">
-                      "用AI把想法变成产品"
                     </div>
                     <button
                       type="button"
@@ -383,15 +394,25 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
                       <div className="kb-uc-empty">暂无操作记录</div>
                     ) : (
                       <div className="kb-uc-history-list">
-                        {activityLogs.map((log) => (
-                          <div key={log.id} className="kb-uc-history-item">
-                            <div className="kb-uc-history-tag" data-type={log.actionType}>
-                              {getActionLabel(log.actionType)}
+                        {activityLogs.map((log) => {
+                          const hasUndefined = !log.content || log.content.includes('undefined');
+                          const displayContent = hasUndefined
+                            ? log.actionType === 'complete_task'
+                              ? '完成了某项任务'
+                              : log.actionType === 'add_task'
+                                ? '添加了某项任务'
+                                : getActionLabel(log.actionType)
+                            : log.content;
+                          return (
+                            <div key={log.id} className="kb-uc-history-item">
+                              <div className="kb-uc-history-tag" data-type={log.actionType}>
+                                {getActionLabel(log.actionType)}
+                              </div>
+                              <div className="kb-uc-history-content">{displayContent}</div>
+                              <div className="kb-uc-history-time">{formatTime(log.createdAt)}</div>
                             </div>
-                            <div className="kb-uc-history-content">{log.content}</div>
-                            <div className="kb-uc-history-time">{formatTime(log.createdAt)}</div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                     {logsTotal > 20 && (
@@ -608,6 +629,40 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
                       </div>
                     </div>
                   )}
+                    <div className="kb-uc-divider" />
+                  {!resetConfirm ? (
+                    <button
+                      type="button"
+                      className="kb-uc-data-btn kb-clear"
+                      onClick={() => setResetConfirm(true)}
+                    >
+                      <RotateCcw size={14} />
+                      <span>重置知识图谱</span>
+                    </button>
+                  ) : (
+                    <div className="kb-uc-clear-confirm">
+                      <span className="kb-uc-clear-text">
+                        确定重置？所有节点、卡片和任务将恢复为初始状态
+                      </span>
+                      <div className="kb-uc-clear-actions">
+                        <button
+                          type="button"
+                          className="kb-uc-cancel-btn"
+                          onClick={() => setResetConfirm(false)}
+                        >
+                          取消
+                        </button>
+                        <button
+                          type="button"
+                          className="kb-uc-confirm-btn"
+                          onClick={handleResetGraph}
+                          disabled={resetGraphMutation.isPending}
+                        >
+                          {resetGraphMutation.isPending ? '重置中...' : '确定重置'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -631,7 +686,7 @@ const UserCenterPanel: React.FC<UserCenterPanelProps> = ({ open, onClose }) => {
                     React + TypeScript + NestJS + PostgreSQL
                   </div>
                   <div className="kb-uc-about-footer">
-                    由问心工作室制作
+                    由土豆制作
                   </div>
                 </div>
               </div>

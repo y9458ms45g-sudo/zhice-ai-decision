@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '@server/common/guards/jwt-auth.guard';
 import { AuthService } from './auth.service';
-import type { AuthResponse, LoginRequest, RegisterRequest } from '@shared/api.interface';
+import type { AuthResponse, LoginRequest, RegisterRequest, ForgotPasswordRequest, ForgotPasswordResponse, ResetPasswordRequest, ResetPasswordResponse } from '@shared/api.interface';
 
 @Controller('api/auth')
 export class AuthController {
@@ -22,5 +22,15 @@ export class AuthController {
   @Get('me')
   async me(@Req() req: Request): Promise<{ id: number; email: string; nickname: string }> {
     return this.authService.getMe(req.user!.user_id);
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+    return this.authService.resetPassword(dto);
   }
 }

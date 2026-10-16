@@ -14,6 +14,10 @@ import type {
   ActionTasksOverview,
   UpdateActionTaskRequest,
   CreateActionTaskRequest,
+  Insight,
+  ExtractedInsight,
+  CreateInsightRequest,
+  InsightSourceType,
 } from '@shared/api.interface';
 
 type ActivityActionType = 
@@ -64,6 +68,7 @@ const QUERY_KEYS = {
   cards: ['knowledge', 'cards'] as const,
   actionTasks: ['knowledge', 'action-tasks'] as const,
   actionTasksOverview: ['knowledge', 'action-tasks-overview'] as const,
+  insights: ['knowledge', 'insights'] as const,
 };
 
 // --- Queries ---
@@ -274,6 +279,19 @@ export function useActionTasksOverviewQuery() {
   });
 }
 
+export function useResetGraphMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (): Promise<KnowledgeGraphData> => knowledgeApi.resetGraph(),
+    onSuccess: (): void => {
+      void queryClient.invalidateQueries({ queryKey: ['knowledge'] });
+    },
+    onError: (error): void => {
+      logger.error('重置知识图谱失败', error);
+    },
+  });
+}
+
 export function useCreateActionTaskMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -282,7 +300,7 @@ export function useCreateActionTaskMutation() {
     onSuccess: (newTask): void => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.actionTasks });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.actionTasksOverview });
-      logActivity('add_task', `添加了任务「${newTask.title}」`);
+      logActivity('add_task', `添加了任务「${newTask.title || '未命名任务'}」`);
     },
     onError: (error): void => {
       logger.error('创建任务失败', error);
@@ -325,7 +343,7 @@ export function useUpdateActionTaskMutation() {
     onSuccess: (updatedTask, variables): void => {
       void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.actionTasksOverview });
       if (variables.status === 'done') {
-        logActivity('complete_task', `完成了任务「${updatedTask.title}」`);
+        logActivity('complete_task', `完成了任务「${updatedTask.title || '未命名任务'}」`);
       }
     },
   });
@@ -341,6 +359,104 @@ export function useDeleteActionTaskMutation() {
     },
     onError: (error): void => {
       logger.error('删除任务失败', error);
+    },
+  });
+}
+
+// --- Insights ---
+
+export function useInsightsQuery() {
+  return useQuery({
+    queryKey: QUERY_KEYS.insights,
+    queryFn: (): Promise<Insight[]> => knowledgeApi.getInsights(),
+    staleTime: 0,
+  });
+}
+
+export function useExtractInsightMutation() {
+  return useMutation({
+    mutationFn: ({
+      content,
+      sourceType,
+      signal,
+    }: {
+      content: string;
+      sourceType?: InsightSourceType;
+      signal?: AbortSignal;
+    }): Promise<ExtractedInsight> =>
+      knowledgeApi.extractInsight(content, sourceType, signal),
+    onError: (error): void => {
+      logger.error('提取观点失败', error);
+    },
+  });
+}
+
+export function useCreateInsightMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (dto: CreateInsightRequest): Promise<Insight> =>
+      knowledgeApi.createInsight(dto),
+    onSuccess: (): void => {
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEYS.insights });
+    },
+    onError: (error): void => {
+      logger.error('保存观点失败', error);
+    },
+  });
+}
+
+export function useLinkInsightNodeMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      linkedNodeId,
+    }: {
+      id: string;
+      linkedNodeId?: string;
+    }): Promise<Insight> => knowledgeApi.linkInsightNode(id, linkedNodeId),
+    onMutate: async ({ id, linkedNodeId }) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.insights });
+      const previous = queryClient.getQueryData<Insight[]>(QUERY_KEYS.insights);
+      if (previous) {
+        queryClient.setQueryData<Insight[]>(
+          QUERY_KEYS.insights,
+          previous.map((item: Insight): Insight =>
+            item.id === id ? { ...item, linkedNodeId } : item,
+          ),
+        );
+      }
+      return { previous };
+    },
+    onError: (error, _vars, context): void => {
+      logger.error('关联节点失败', error);
+      if (context?.previous) {
+        queryClient.setQueryData(QUERY_KEYS.insights, context.previous);
+      }
+    },
+  });
+}
+
+export function useDeleteInsightMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string): Promise<void> => knowledgeApi.deleteInsight(id),
+    onMutate: async (deletedId) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEYS.insights });
+      const previous = queryClient.getQueryData<Insight[]>(QUERY_KEYS.insights);
+      if (previous) {
+        queryClient.setQueryData<Insight[]>(
+          QUERY_KEYS.insights,
+          previous.filter((item: Insight): boolean => item.id !== deletedId),
+        );
+      }
+      return { previous };
+    },
+    onError: (error, _vars, context): void => {
+      logger.error('删除观点失败', error);
+      if (context?.previous) {
+        queryClient.setQueryData(QUERY_KEYS.insights, context.previous);
+      }
     },
   });
 }

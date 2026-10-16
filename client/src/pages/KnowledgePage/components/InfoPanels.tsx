@@ -3,6 +3,7 @@ import WeeklyStatsCards from '../WeeklyStatsCards';
 import ActionTasksByWeek from '../ActionTasksByWeek';
 import EditableCard from '../EditableCard';
 import ProgressCard from '../ProgressCard';
+import InsightsPanel from './InsightsPanel';
 
 const InfoPanels: React.FC = () => {
   return (
@@ -17,7 +18,7 @@ const InfoPanels: React.FC = () => {
 
       <div className="kb-dashboard-section grid grid-cols-1 md:grid-cols-2 gap-6">
         <div id="strategy" style={{ scrollMarginTop: 100 }}>
-          <div className="kb-section-title" id="radar" style={{ scrollMarginTop: 100 }}>
+          <div className="kb-section-title" id="strategy-title" style={{ scrollMarginTop: 100 }}>
             <span className="kb-section-title-icon">🎯</span>
             <span className="kb-section-title-text">战略规划</span>
           </div>
@@ -87,80 +88,16 @@ const InfoPanels: React.FC = () => {
         </div>
       </div>
 
-      <div className="kb-dashboard-section grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div id="profile" style={{ scrollMarginTop: 100 }}>
-          <div className="kb-section-title">
-            <span className="kb-section-title-icon">🌸</span>
-            <span className="kb-section-title-text">基础画像</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <EditableCard
-              sectionKey="education"
-              title="教育背景"
-              emoji="🎓"
-              color="var(--blush)"
-            />
-            <EditableCard
-              sectionKey="experience"
-              title="实践经历"
-              emoji="💼"
-              color="var(--powder)"
-            />
-            <EditableCard
-              sectionKey="techstack"
-              title="技术栈"
-              emoji="🛠️"
-              color="var(--mint)"
-            />
-            <EditableCard
-              sectionKey="constraints"
-              title="关键约束"
-              emoji="🎯"
-              color="var(--lav)"
-            />
-          </div>
-        </div>
-
-        <div id="deep" style={{ scrollMarginTop: 100 }}>
-          <div className="kb-section-title">
-            <span className="kb-section-title-icon">🌊</span>
-            <span className="kb-section-title-text">深耕领域</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <EditableCard
-              sectionKey="deep_backend"
-              title="后端开发"
-              emoji="⚙️"
-              color="var(--mint)"
-            />
-            <EditableCard
-              sectionKey="deep_fullstack"
-              title="深度全栈"
-              emoji="🧩"
-              color="var(--lav)"
-            />
-            <EditableCard
-              sectionKey="deep_ai_pm"
-              title="AI产品经理"
-              emoji="🤖"
-              color="var(--butter)"
-            />
-            <EditableCard
-              sectionKey="deep_frontend"
-              title="FED前端"
-              emoji="🎨"
-              color="var(--peach)"
-            />
-          </div>
-        </div>
-      </div>
-
       <div className="kb-dashboard-section" id="progress">
         <div className="kb-section-title">
           <span className="kb-section-title-icon">⏳</span>
           <span className="kb-section-title-text">90天行动进度</span>
         </div>
         <ProgressCard />
+      </div>
+
+      <div className="kb-dashboard-section" id="insights">
+        <InsightsPanel />
       </div>
     </main>
   );

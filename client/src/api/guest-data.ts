@@ -483,6 +483,15 @@ export const guestStore = {
       todayActivity: 0,
       weeklyProgress,
       weeklyTaskCounts,
+      weekCompletedTasks: 0,
+      streakDays: 0,
+      lastAiSuggestionAt: null,
+      taskTypeDistribution: {
+        learning: data.tasks.filter((t: ActionTask): boolean => t.taskType === 'learning').length,
+        job_hunting: data.tasks.filter((t: ActionTask): boolean => t.taskType === 'job_hunting').length,
+        money_making: data.tasks.filter((t: ActionTask): boolean => t.taskType === 'money_making').length,
+      },
+      weekOverWeekChange: 0,
     });
   },
 

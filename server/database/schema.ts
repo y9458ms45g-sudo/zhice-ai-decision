@@ -119,6 +119,66 @@ export const fileAttachmentArray = customType<{
 
 export const usersIdSeq = pgSequence("users_id_seq");
 
+export const insights = pgTable("insights", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: integer("user_id").notNull().default(1),
+  title: varchar("title", { length: 255 }).notNull(),
+  originalContent: text("original_content").notNull(),
+  summary: text("summary"),
+  counterIntuitive: text("counter_intuitive"),
+  applicableScenario: text("applicable_scenario"),
+  actionItem: text("action_item"),
+  credibility: varchar("credibility", { length: 20 }),
+  sourceType: varchar("source_type", { length: 20 }).default('other'),
+  linkedNodeId: uuid("linked_node_id"),
+  createdAt: customTimestamptz("created_at", { precision: 3 }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  // System field: Creator (auto-filled, do not modify)
+  createdBy: userProfile("_created_by").default(sql`CASE
+    WHEN (current_setting('app.user_id'::text, true) = ''::text) THEN NULL`),
+  // System field: Update time (auto-filled, do not modify)
+  updatedAt: customTimestamptz("_updated_at", { precision: 3 }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  // System field: Updater (auto-filled, do not modify)
+  updatedBy: userProfile("_updated_by").default(sql`CASE
+    WHEN (current_setting('app.user_id'::text, true) = ''::text) THEN NULL`),
+}, (table) => [
+  index("idx_insights_user_id").on(table.userId),
+  index("idx_insights_created_at").on(table.createdAt),
+  index("idx_insights_linked_node_id").on(table.linkedNodeId),
+  foreignKey({
+    columns: [table.userId],
+    foreignColumns: [users.id],
+    name: "insights_user_id_fkey",
+  }).onDelete("cascade"),
+  foreignKey({
+    columns: [table.linkedNodeId],
+    foreignColumns: [nodes.id],
+    name: "insights_linked_node_id_fkey",
+  }).onDelete("set null"),
+]);
+
+export const passwordResets = pgTable("password_resets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  email: varchar("email", { length: 255 }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: customTimestamptz("expires_at", { precision: 3 }).notNull(),
+  used: boolean("used").notNull().default(false),
+  // System field: Creation time (auto-filled, do not modify)
+  createdAt: customTimestamptz("_created_at", { precision: 3 }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  // System field: Creator (auto-filled, do not modify)
+  createdBy: userProfile("_created_by").default(sql`CASE
+    WHEN (current_setting('app.user_id'::text, true) = ''::text) THEN NULL`),
+  // System field: Update time (auto-filled, do not modify)
+  updatedAt: customTimestamptz("_updated_at", { precision: 3 }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  // System field: Updater (auto-filled, do not modify)
+  updatedBy: userProfile("_updated_by").default(sql`CASE
+    WHEN (current_setting('app.user_id'::text, true) = ''::text) THEN NULL`),
+}, (table) => [
+  uniqueIndex("password_resets_token_key").on(table.token),
+  index("idx_password_resets_token").on(table.token),
+  index("idx_password_resets_email").on(table.email),
+  index("idx_password_resets_expires_at").on(table.expiresAt),
+]);
+
 export const users = pgTable("users", {
   id: integer("id").primaryKey().default(sql`nextval('users_id_seq'::regclass)`),
   email: varchar("email", { length: 255 }).notNull().unique(),
@@ -322,6 +382,8 @@ export const activityLogsTable = activityLogs;
 export const aiConversationsTable = aiConversations;
 export const cardContentsTable = cardContents;
 export const edgesTable = edges;
+export const insightsTable = insights;
 export const nodesTable = nodes;
 export const operationHistoryTable = operationHistory;
+export const passwordResetsTable = passwordResets;
 export const usersTable = users;

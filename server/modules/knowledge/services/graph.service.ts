@@ -1,8 +1,8 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { EventEmitter } from 'events';
 import { DRIZZLE_DATABASE, type PostgresJsDatabase } from '@lark-apaas/fullstack-nestjs-core';
 import { eq } from 'drizzle-orm';
-import { nodes, actionTasks } from '@server/database/schema';
+import { nodes, actionTasks, cardContents, edges } from '@server/database/schema';
 import type {
   KnowledgeNode,
   KnowledgeGraphData,
@@ -15,7 +15,7 @@ import { CardService } from './card.service';
 
 const DEFAULT_NODES: Omit<KnowledgeNode, 'id'>[] = [
   { name: '我', description: '个人中心', icon: '🐱', color: '#FFC9DE', x: 0, y: 0, isCenter: true },
-  { name: '问心工作室', description: '个人品牌', icon: '🎀', color: '#DCC9F7', x: 280, y: -230, isCenter: false },
+  { name: '土豆', description: '个人品牌', icon: '🎀', color: '#DCC9F7', x: 280, y: -230, isCenter: false },
   { name: '个人技能', description: '变现能力底座', icon: '💡', color: '#FFCC80', x: -280, y: -230, isCenter: false },
   { name: 'AIGC小说', description: 'AI创作小说', icon: '📝', color: '#FFE7A8', x: -490, y: -400, isCenter: false },
   { name: '剪辑接单', description: '视频剪辑', icon: '🎬', color: '#FFD4B8', x: -540, y: -230, isCenter: false },
@@ -118,12 +118,12 @@ const DEFAULT_ACTION_TASKS: Array<{ title: string; status: ActionTaskStatus; tas
 ];
 
 const OLD_LAYOUT_SIGNS: Array<{ name: string; x: number; y: number; tolerance: number }> = [
-  { name: '问心工作室', x: 280, y: -180, tolerance: 30 },
+  { name: '土豆', x: 280, y: -180, tolerance: 30 },
   { name: '个人技能', x: -280, y: 60, tolerance: 30 },
   { name: '后端开发', x: 460, y: -280, tolerance: 30 },
   { name: 'FED前端', x: 360, y: -320, tolerance: 30 },
   { name: '自媒体', x: -440, y: -80, tolerance: 30 },
-  { name: '问心工作室', x: 400, y: -40, tolerance: 30 },
+  { name: '土豆', x: 400, y: -40, tolerance: 30 },
   { name: '个人技能', x: -320, y: 220, tolerance: 30 },
   { name: '后端开发', x: 700, y: -100, tolerance: 30 },
   { name: '自媒体', x: -540, y: 380, tolerance: 30 },
@@ -138,6 +138,7 @@ export class GraphService {
     private readonly edgeService: EdgeService,
     private readonly cardService: CardService,
   ) {}
+  private readonly logger = new Logger(GraphService.name);
 
   async getGraph(userId: number): Promise<KnowledgeGraphData> {
     const [nodeList, edgeList] = await Promise.all([
@@ -162,11 +163,11 @@ export class GraphService {
     }
 
     const centerId = nodeMap.get('我');
-    const studioId = nodeMap.get('问心工作室');
+    const studioId = nodeMap.get('土豆');
     const skillHubId = nodeMap.get('个人技能');
     const techChildren = ['后端开发', '深度全栈', 'AI产品经理', 'FED前端'];
     const monetizeChildren = ['AIGC小说', '剪辑接单', '自媒体'];
-    const directChildren = ['问心工作室', '个人技能', '生存约束', '新闻学', '内容运营'];
+    const directChildren = ['土豆', '个人技能', '生存约束', '新闻学', '内容运营'];
 
     if (centerId) {
       for (const name of directChildren) {
@@ -215,16 +216,25 @@ export class GraphService {
       await this.cardService.upsertCard(card.sectionKey, card.content, userId);
     }
 
-    const existingTasks = await this.db.select().from(actionTasks).limit(1);
+    const existingTasks = await this.db
+      .select()
+      .from(actionTasks)
+      .where(eq(actionTasks.userId, userId))
+      .limit(1);
     if (existingTasks.length === 0) {
-      for (const task of DEFAULT_ACTION_TASKS) {
-        await this.db.insert(actionTasks).values({
-          title: task.title,
-          status: task.status,
-          taskType: task.taskType,
-          dueDate: task.dueDate,
-          sortOrder: task.sortOrder,
-        });
+      try {
+        for (const task of DEFAULT_ACTION_TASKS) {
+          await this.db.insert(actionTasks).values({
+            title: task.title,
+            status: task.status,
+            taskType: task.taskType,
+            dueDate: task.dueDate,
+            sortOrder: task.sortOrder,
+            userId,
+          });
+        }
+      } catch (err) {
+        this.logger.warn('初始化默认任务失败，跳过', err);
       }
     }
 
@@ -235,6 +245,16 @@ export class GraphService {
       userId,
     });
     return this.getGraph(userId);
+  }
+
+  async resetGraph(userId: number): Promise<KnowledgeGraphData> {
+    await this.db.transaction(async (tx) => {
+      await tx.delete(actionTasks).where(eq(actionTasks.userId, userId));
+      await tx.delete(cardContents).where(eq(cardContents.userId, userId));
+      await tx.delete(edges).where(eq(edges.userId, userId));
+      await tx.delete(nodes).where(eq(nodes.userId, userId));
+    });
+    return this.initDefaultGraph(userId);
   }
 
   async migrateLayoutIfNeeded(existingNodes: KnowledgeNode[]): Promise<void> {

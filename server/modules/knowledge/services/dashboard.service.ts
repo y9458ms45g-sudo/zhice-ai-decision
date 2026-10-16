@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { DRIZZLE_DATABASE, type PostgresJsDatabase } from '@lark-apaas/fullstack-nestjs-core';
-import { eq, count, gte, and, sql } from 'drizzle-orm';
+import { eq, count, gte, and, sql, lt, desc } from 'drizzle-orm';
 import {
   nodes,
   edges,
@@ -8,7 +8,7 @@ import {
   operationHistory,
   aiConversations,
 } from '@server/database/schema';
-import type { DashboardStats, DailyTaskCount } from '@shared/api.interface';
+import type { DashboardStats, DailyTaskCount, TaskTypeDistribution } from '@shared/api.interface';
 
 @Injectable()
 export class DashboardService {
@@ -35,6 +35,9 @@ export class DashboardService {
       weekDoneResult,
       weekTotalResult,
       weeklyTaskCounts,
+      taskTypeResult,
+      lastAiResult,
+      prevWeekDoneResult,
     ] = await Promise.all([
       this.db
         .select({ count: count() })
@@ -92,18 +95,42 @@ export class DashboardService {
           ),
         ),
       this.getWeeklyTaskCounts(userId, weekStart),
+      this.getTaskTypeDistribution(userId),
+      this.db
+        .select({ createdAt: aiConversations.createdAt })
+        .from(aiConversations)
+        .orderBy(desc(aiConversations.createdAt))
+        .limit(1),
+      this.db
+        .select({ count: count() })
+        .from(actionTasks)
+        .where(
+          and(
+            eq(actionTasks.userId, userId),
+            eq(actionTasks.status, 'done'),
+            gte(actionTasks.updatedAt, this.getPrevWeekStart(weekStart)),
+            lt(actionTasks.updatedAt, weekStart),
+          ),
+        ),
     ]);
 
     const totalTasks = Number(tasksResult[0]?.count ?? 0);
     const completedTasks = Number(doneTasksResult[0]?.count ?? 0);
     const weekDone = Number(weekDoneResult[0]?.count ?? 0);
     const weekTotal = Number(weekTotalResult[0]?.count ?? 0);
+    const prevWeekDone = Number(prevWeekDoneResult[0]?.count ?? 0);
 
     const weeklyProgress = weekTotal > 0
       ? Math.round((weekDone / weekTotal) * 100)
       : totalTasks > 0
         ? Math.round((completedTasks / totalTasks) * 100)
         : 0;
+
+    const streakDays = await this.calculateStreakDays(userId);
+
+    const weekOverWeekChange = prevWeekDone > 0
+      ? Math.round(((weekDone - prevWeekDone) / prevWeekDone) * 100)
+      : weekDone > 0 ? 100 : 0;
 
     return {
       totalNodes: Number(nodesResult[0]?.count ?? 0),
@@ -116,7 +143,76 @@ export class DashboardService {
       todayActivity: Number(todayActivityResult[0]?.count ?? 0),
       weeklyProgress,
       weeklyTaskCounts,
+      weekCompletedTasks: weekDone,
+      streakDays,
+      lastAiSuggestionAt: lastAiResult[0]?.createdAt?.toISOString() ?? null,
+      taskTypeDistribution: taskTypeResult,
+      weekOverWeekChange,
     };
+  }
+
+  private getPrevWeekStart(weekStart: Date): Date {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() - 7);
+    return d;
+  }
+
+  private async getTaskTypeDistribution(userId: number): Promise<TaskTypeDistribution> {
+    const rows = await this.db
+      .select({
+        taskType: actionTasks.taskType,
+        count: count(),
+      })
+      .from(actionTasks)
+      .where(eq(actionTasks.userId, userId))
+      .groupBy(actionTasks.taskType);
+
+    const result: TaskTypeDistribution = {
+      learning: 0,
+      job_hunting: 0,
+      money_making: 0,
+    };
+    for (const row of rows) {
+      const key = row.taskType as keyof TaskTypeDistribution;
+      if (key in result) {
+        result[key] = Number(row.count);
+      }
+    }
+    return result;
+  }
+
+  private async calculateStreakDays(userId: number): Promise<number> {
+    const completed = await this.db
+      .select({ updatedAt: actionTasks.updatedAt })
+      .from(actionTasks)
+      .where(and(eq(actionTasks.userId, userId), eq(actionTasks.status, 'done')))
+      .orderBy(desc(actionTasks.updatedAt))
+      .limit(100);
+
+    if (completed.length === 0) return 0;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dateSet = new Set<string>();
+    for (const row of completed) {
+      const d = new Date(row.updatedAt);
+      d.setHours(0, 0, 0, 0);
+      dateSet.add(d.toISOString().slice(0, 10));
+    }
+
+    let streak = 0;
+    const current = new Date(today);
+    if (!dateSet.has(current.toISOString().slice(0, 10))) {
+      current.setDate(current.getDate() - 1);
+      if (!dateSet.has(current.toISOString().slice(0, 10))) {
+        return 0;
+      }
+    }
+    while (dateSet.has(current.toISOString().slice(0, 10))) {
+      streak += 1;
+      current.setDate(current.getDate() - 1);
+    }
+    return streak;
   }
 
   private async getWeeklyTaskCounts(

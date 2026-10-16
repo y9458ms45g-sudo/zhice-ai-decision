@@ -1,6 +1,5 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'react-router-dom';
 import {
   Network,
   GitBranch,
@@ -15,13 +14,12 @@ import {
 } from 'lucide-react';
 import { getDashboardStats } from '@client/src/api/knowledge';
 import { logger } from '@lark-apaas/client-toolkit/logger';
-import ThemeSwitcher from '../KnowledgePage/ThemeSwitcher';
+import TopNav from '../KnowledgePage/components/TopNav';
+import { ThemeProvider } from '../KnowledgePage/ThemeContext';
 import '../KnowledgePage/knowledge-coquette.css';
 import './dashboard.css';
 
 const DashboardPage: React.FC = () => {
-  const location = useLocation();
-
   const { data: stats, isLoading, error } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: getDashboardStats,
@@ -31,47 +29,22 @@ const DashboardPage: React.FC = () => {
     logger.error('仪表盘数据加载失败', error);
   }
 
-  return (
-    <div
-      className="kb-page kb-theme-light"
-      style={{
-        minHeight: '100vh',
-        background:
-          'linear-gradient(135deg, #FFF6EC 0%, #FFF1F4 50%, #F5F1FF 100%)',
-        paddingBottom: 60,
-      }}
-    >
-      <nav className="kb-nav" style={{ position: 'sticky', top: 0, zIndex: 50 }}>
-        <div className="kb-nav-logo">
-          <svg viewBox="0 0 40 28" aria-hidden="true">
-            <use href="#i-bow" />
-          </svg>
-          智策
-        </div>
-        <div className="kb-nav-links">
-          <Link to="/" className="kb-nav-item">
-            <button
-              type="button"
-              className={location.pathname === '/' ? 'kb-active' : ''}
-            >
-              <span className="kb-nav-icon" aria-hidden="true">✨</span>
-              知识网络
-            </button>
-          </Link>
-          <Link to="/dashboard" className="kb-nav-item">
-            <button
-              type="button"
-              className={location.pathname === '/dashboard' ? 'kb-active' : ''}
-            >
-              <span className="kb-nav-icon" aria-hidden="true">📊</span>
-              仪表盘
-            </button>
-          </Link>
-        </div>
-        <ThemeSwitcher />
-      </nav>
+  const handleScrollToSection = (): void => {};
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
+  return (
+    <ThemeProvider>
+      <div
+        className="kb-page kb-theme-light"
+        style={{
+          minHeight: '100vh',
+          background:
+            'linear-gradient(135deg, #FFF6EC 0%, #FFF1F4 50%, #F5F1FF 100%)',
+          paddingBottom: 60,
+        }}
+      >
+        <TopNav onScrollToSection={handleScrollToSection} mode="navigate" />
+
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px 0' }}>
         <div
           style={{
             display: 'flex',
@@ -223,8 +196,9 @@ const DashboardPage: React.FC = () => {
             </div>
           </>
         )}
+        </div>
       </div>
-    </div>
+    </ThemeProvider>
   );
 };
 

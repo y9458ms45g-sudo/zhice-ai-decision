@@ -116,6 +116,7 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ onScrollDown }) => {
   const graphQuery = useGraphQuery();
   const nodes: KnowledgeNode[] = graphQuery.data?.nodes ?? [];
   const edges: KnowledgeEdge[] = graphQuery.data?.edges ?? [];
+  const graphError = graphQuery.isError;
 
   const updateNodeMutation = useUpdateNodeMutation();
   const createNodeMutation = useCreateNodeMutation();
@@ -277,17 +278,35 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ onScrollDown }) => {
           </div>
         </div>
         <div className="kb-canvas-card-body">
-          <KnowledgeCanvas
-            nodes={nodes}
-            edges={edges}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={handleSelectNode}
-            onEditNode={handleEditNode}
-            onAddNode={handleAddNode}
-            onNodePositionChange={handleNodePositionChange}
-            onScrollDown={onScrollDown}
-            visible={canvasVisible}
-          />
+          {graphError ? (
+            <div className="kb-canvas-error">
+              <div className="kb-canvas-error-icon">😿</div>
+              <div className="kb-canvas-error-title">知识图谱加载失败</div>
+              <div className="kb-canvas-error-desc">网络好像开小差了，点击按钮重试一下吧</div>
+              <button
+                type="button"
+                className="kb-canvas-error-btn"
+                onClick={(): void => {
+                  void graphQuery.refetch();
+                }}
+                disabled={graphQuery.isFetching}
+              >
+                {graphQuery.isFetching ? '加载中...' : '重新加载'}
+              </button>
+            </div>
+          ) : (
+            <KnowledgeCanvas
+              nodes={nodes}
+              edges={edges}
+              selectedNodeId={selectedNodeId}
+              onSelectNode={handleSelectNode}
+              onEditNode={handleEditNode}
+              onAddNode={handleAddNode}
+              onNodePositionChange={handleNodePositionChange}
+              onScrollDown={onScrollDown}
+              visible={canvasVisible}
+            />
+          )}
         </div>
       </div>
 

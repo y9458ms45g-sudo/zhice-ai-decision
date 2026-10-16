@@ -83,7 +83,7 @@ function getIconFont(): string {
 
 const PORTRAIT_LAYOUT: Record<string, { x: number; y: number }> = {
   '我': { x: 0, y: 0 },
-  '问心工作室': { x: 130, y: -80 },
+  '土豆': { x: 130, y: -80 },
   '个人技能': { x: -130, y: -80 },
   '新闻学': { x: -150, y: 90 },
   '内容运营': { x: 150, y: 90 },
@@ -642,13 +642,14 @@ const KnowledgeCanvas: React.FC<KnowledgeCanvasProps> = ({
         ctx.textBaseline = 'middle';
         ctx.fillText(node.name, node.x, ly + bh / 2);
 
-        if (a.hov > 0.25 && node.description) {
+        if ((a.hov > 0.25 || a.sel > 0.3) && node.description) {
           const d = node.description.length > 18
             ? node.description.slice(0, 18) + '…'
             : node.description;
           ctx.font = `12px ${UI_FONT}`;
           const dw = ctx.measureText(d).width;
-          ctx.globalAlpha = Math.min(1, a.hov * 1.4);
+          const descAlpha = Math.max(a.hov, a.sel);
+          ctx.globalAlpha = Math.min(1, descAlpha * 1.4);
           ctx.beginPath();
           roundRect(ctx, node.x - dw / 2 - 12, ly + bh + 4, dw + 24, 26, 13);
           ctx.fillStyle = descBg;

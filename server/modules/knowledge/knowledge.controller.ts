@@ -25,6 +25,7 @@ import { HistoryService } from './services/history.service';
 import { AiService } from './services/ai.service';
 import { GraphService } from './services/graph.service';
 import { DashboardService } from './services/dashboard.service';
+import { InsightService } from './services/insight.service';
 import type {
   KnowledgeNode,
   KnowledgeEdge,
@@ -47,7 +48,13 @@ import type {
   OperationHistoryResponse,
   CreateOperationHistoryRequest,
   DashboardStats,
-} from '@shared/api.interface';
+  Insight,
+  ExtractedInsight,
+  ExtractInsightRequest,
+  CreateInsightRequest,
+   LinkInsightNodeRequest,
+   ProfileGraphResponse,
+ } from '@shared/api.interface';
 
 @Controller('api/knowledge')
 export class KnowledgeController {
@@ -60,6 +67,7 @@ export class KnowledgeController {
     private readonly aiService: AiService,
     private readonly graphService: GraphService,
     private readonly dashboardService: DashboardService,
+    private readonly insightService: InsightService,
   ) {}
 
   @UseGuards(JwtAuthGuard)
@@ -72,6 +80,12 @@ export class KnowledgeController {
   @Post('init')
   async initGraph(@Req() req: Request): Promise<KnowledgeGraphData> {
     return this.graphService.initDefaultGraph(req.user!.user_id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('reset')
+  async resetGraph(@Req() req: Request): Promise<KnowledgeGraphData> {
+    return this.graphService.resetGraph(req.user!.user_id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -138,6 +152,12 @@ export class KnowledgeController {
   @Get('cards')
   async getCards(@Req() req: Request): Promise<CardContent[]> {
     return this.cardService.getCards(req.user!.user_id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('profile-graph')
+  getProfileGraph(@Req() req: Request): Promise<ProfileGraphResponse> {
+    return this.cardService.getProfileGraph(req.user!.user_id);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -293,5 +313,52 @@ export class KnowledgeController {
   async deleteActionTask(@Req() req: Request, @Param('id') id: string): Promise<void> {
     const deleted = await this.taskService.deleteActionTask(id, req.user!.user_id);
     if (!deleted) throw new ForbiddenException('任务不存在或无权操作');
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('insights/extract')
+  async extractInsight(
+    @Req() req: Request,
+    @Body() dto: ExtractInsightRequest,
+  ): Promise<ExtractedInsight> {
+    if (!dto.content?.trim()) throw new BadRequestException('内容不能为空');
+    return this.insightService.extractInsight(dto.content, dto.sourceType);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('insights')
+  async createInsight(
+    @Req() req: Request,
+    @Body() dto: CreateInsightRequest,
+  ): Promise<Insight> {
+    if (!dto.title?.trim() || !dto.originalContent?.trim()) {
+      throw new BadRequestException('标题和原始内容不能为空');
+    }
+    return this.insightService.createInsight(dto, req.user!.user_id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('insights')
+  async getInsights(@Req() req: Request): Promise<Insight[]> {
+    return this.insightService.listInsights(req.user!.user_id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('insights/:id/link')
+  async linkInsightNode(
+    @Req() req: Request,
+    @Param('id') id: string,
+    @Body() dto: LinkInsightNodeRequest,
+  ): Promise<Insight> {
+    const insight = await this.insightService.linkNode(id, dto.linkedNodeId, req.user!.user_id);
+    if (!insight) throw new ForbiddenException('观点不存在或无权操作');
+    return insight;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete('insights/:id')
+  async deleteInsight(@Req() req: Request, @Param('id') id: string): Promise<void> {
+    const deleted = await this.insightService.deleteInsight(id, req.user!.user_id);
+    if (!deleted) throw new ForbiddenException('观点不存在或无权操作');
   }
 }

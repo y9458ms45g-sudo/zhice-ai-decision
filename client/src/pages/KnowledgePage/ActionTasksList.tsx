@@ -7,7 +7,7 @@ import {
   useCreateActionTaskMutation,
 } from './useKnowledgeData';
 import type { ActionTask, ActionTaskStatus, ActionTaskType } from '@shared/api.interface';
-import { Calendar, Plus, Trash2, CheckCircle2, Clock, Circle } from 'lucide-react';
+import { Calendar, Plus, Trash2, CheckCircle2, Clock, Circle, CalendarClock } from 'lucide-react';
 
 const STATUS_STYLES: Record<
   ActionTaskStatus,
@@ -73,7 +73,16 @@ const ActionTasksList: React.FC = () => {
 
   const sortedTasks = useMemo((): ActionTask[] => {
     if (!tasks) return [];
-    return [...tasks].sort((a: ActionTask, b: ActionTask): number => {
+    // 按标题去重：相同标题的任务只保留第一条
+    const seen = new Set<string>();
+    const deduped = tasks.filter((t: ActionTask): boolean => {
+      const key = t.title.trim();
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    return [...deduped].sort((a: ActionTask, b: ActionTask): number => {
       if (!a.dueDate && !b.dueDate) return a.sortOrder - b.sortOrder;
       if (!a.dueDate) return 1;
       if (!b.dueDate) return -1;
@@ -95,6 +104,18 @@ const ActionTasksList: React.FC = () => {
 
   const handleDelete = (id: string): void => {
     deleteMutation.mutate(id);
+  };
+
+  const handleMarkDone = (task: ActionTask): void => {
+    updateMutation.mutate({ id: task.id, status: 'done' });
+  };
+
+  const handlePostpone7Days = (task: ActionTask): void => {
+    if (!task.dueDate) return;
+    const due = new Date(task.dueDate);
+    due.setDate(due.getDate() + 7);
+    const newDue = due.toISOString().split('T')[0];
+    updateMutation.mutate({ id: task.id, dueDate: newDue });
   };
 
   const handleAdd = (): void => {
@@ -436,49 +457,118 @@ const ActionTasksList: React.FC = () => {
                    </div>
                  </div>
 
-               <span
-                 className={`kb-task-status-label ${statusClass}`}
+                {overdue && task.status === 'todo' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={(): void => handleMarkDone(task)}
+                      title="标记完成"
+                      aria-label="标记完成"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        border: 'none',
+                        background: 'rgba(185, 231, 212, 0.6)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#2E8B57',
+                        transition: 'all 0.15s ease',
+                        minWidth: 28,
+                      }}
+                      onMouseDown={(e): void => {
+                        e.currentTarget.style.transform = 'scale(0.9)';
+                      }}
+                      onMouseUp={(e): void => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      onMouseLeave={(e): void => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <CheckCircle2 size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(): void => handlePostpone7Days(task)}
+                      title="延期7天"
+                      aria-label="延期7天"
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 14,
+                        border: 'none',
+                        background: 'rgba(199, 222, 250, 0.6)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#4A7FB5',
+                        transition: 'all 0.15s ease',
+                        minWidth: 28,
+                      }}
+                      onMouseDown={(e): void => {
+                        e.currentTarget.style.transform = 'scale(0.9)';
+                      }}
+                      onMouseUp={(e): void => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                      onMouseLeave={(e): void => {
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <CalendarClock size={15} />
+                    </button>
+                  </div>
+                )}
+
+                {!overdue && (
+                  <span
+                    className={`kb-task-status-label ${statusClass}`}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 600,
+                      color: style.text,
+                      background: 'rgba(255, 255, 255, 0.6)',
+                      padding: '3px 8px',
+                      borderRadius: 8,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {style.label}
+                  </span>
+                )}
+
+               <button
+                 onClick={(): void => handleDelete(task.id)}
                  style={{
-                   fontSize: 10,
-                   fontWeight: 600,
-                   color: style.text,
-                   background: 'rgba(255, 255, 255, 0.6)',
-                   padding: '3px 8px',
-                   borderRadius: 8,
+                   width: 22,
+                   height: 22,
+                   borderRadius: 11,
+                   border: 'none',
+                   background: 'transparent',
+                   cursor: 'pointer',
+                   display: 'flex',
+                   alignItems: 'center',
+                   justifyContent: 'center',
+                   color: 'var(--ink-3)',
+                   opacity: 0.5,
+                   transition: 'all 0.2s ease',
                    flexShrink: 0,
                  }}
+                 onMouseEnter={(e): void => {
+                   e.currentTarget.style.opacity = '1';
+                   e.currentTarget.style.color = '#E74C3C';
+                 }}
+                 onMouseLeave={(e): void => {
+                   e.currentTarget.style.opacity = '0.5';
+                   e.currentTarget.style.color = 'var(--ink-3)';
+                 }}
                >
-                 {style.label}
-               </span>
-
-              <button
-                onClick={(): void => handleDelete(task.id)}
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 11,
-                  border: 'none',
-                  background: 'transparent',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--ink-3)',
-                  opacity: 0.5,
-                  transition: 'all 0.2s ease',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e): void => {
-                  e.currentTarget.style.opacity = '1';
-                  e.currentTarget.style.color = '#E74C3C';
-                }}
-                onMouseLeave={(e): void => {
-                  e.currentTarget.style.opacity = '0.5';
-                  e.currentTarget.style.color = 'var(--ink-3)';
-                }}
-              >
-                <Trash2 size={13} />
-              </button>
+                 <Trash2 size={13} />
+               </button>
             </div>
           );
         })}

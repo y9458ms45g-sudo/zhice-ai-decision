@@ -9,6 +9,7 @@ import { HistoryService } from './services/history.service';
 import { AiService } from './services/ai.service';
 import { GraphService } from './services/graph.service';
 import { DashboardService } from './services/dashboard.service';
+import { InsightService } from './services/insight.service';
 
 const KNOWLEDGE_EVENT_EMITTER = new EventEmitter();
 KNOWLEDGE_EVENT_EMITTER.setMaxListeners(100);
@@ -24,6 +25,7 @@ KNOWLEDGE_EVENT_EMITTER.setMaxListeners(100);
     AiService,
     GraphService,
     DashboardService,
+    InsightService,
     {
       provide: 'KNOWLEDGE_EVENT_EMITTER',
       useValue: KNOWLEDGE_EVENT_EMITTER,

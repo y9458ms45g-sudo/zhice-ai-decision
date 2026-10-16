@@ -10,6 +10,10 @@ import type {
   KnowledgeEdge,
   CardContent,
   ActionTask,
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
 } from '@shared/api.interface';
 
 export async function login(data: LoginRequest): Promise<AuthResponse> {
@@ -32,12 +36,34 @@ export async function register(data: RegisterRequest): Promise<AuthResponse> {
   }
 }
 
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<ForgotPasswordResponse> {
+  try {
+    const response = await axiosForBackend.post('/api/auth/forgot-password', data);
+    return response.data;
+  } catch (error) {
+    logger.error('发送重置链接失败', error);
+    throw error;
+  }
+}
+
+export async function resetPassword(data: ResetPasswordRequest): Promise<ResetPasswordResponse> {
+  try {
+    const response = await axiosForBackend.post('/api/auth/reset-password', data);
+    return response.data;
+  } catch (error) {
+    logger.error('重置密码失败', error);
+    throw error;
+  }
+}
+
 export const TOKEN_KEY = 'zhice_token';
 export const USER_KEY = 'zhice_user';
 
 export async function saveAuth(token: string, user: AuthResponse['user']): Promise<void> {
+  exitGuestMode();
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  axiosForBackend.defaults.headers.common.Authorization = `Bearer ${token}`;
   try {
     await migrateGuestData();
   } catch (error) {
@@ -120,25 +146,46 @@ export function getUser(): AuthResponse['user'] | null {
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  delete axiosForBackend.defaults.headers.common.Authorization;
 }
 
-export function setupAuthInterceptor(onUnauthorized: () => void): void {
-  axiosForBackend.interceptors.request.use((config) => {
-    const token = getToken();
-    if (token) {
-      config.headers.set('Authorization', `Bearer ${token}`);
-    }
-    return config;
-  });
+let isRedirecting = false;
+let unauthorizedCallback: (() => void) | null = null;
 
-  axiosForBackend.interceptors.response.use(
-    (response) => response,
-    (error) => {
-      if (error?.response?.status === 401) {
-        clearAuth();
-        onUnauthorized();
+const existingToken = getToken();
+if (existingToken) {
+  axiosForBackend.defaults.headers.common.Authorization = `Bearer ${existingToken}`;
+}
+
+axiosForBackend.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.set('Authorization', `Bearer ${token}`);
+  }
+  return config;
+});
+
+axiosForBackend.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      clearAuth();
+      if (!isRedirecting) {
+        isRedirecting = true;
+        setTimeout(() => {
+          isRedirecting = false;
+        }, 1000);
+        if (unauthorizedCallback) {
+          unauthorizedCallback();
+        } else {
+          window.location.replace('/login');
+        }
       }
-      return Promise.reject(error);
-    },
-  );
+    }
+    return Promise.reject(error);
+  },
+);
+
+export function setupAuthInterceptor(onUnauthorized: () => void): void {
+  unauthorizedCallback = onUnauthorized;
 }

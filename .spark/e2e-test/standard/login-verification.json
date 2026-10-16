@@ -1,0 +1,7 @@
+{"cases":[
+  {"id":1,"priority":"p0","description":"打开首页 → 正确跳转到登录页"},
+  {"id":2,"priority":"p0","description":"用 test@2026 登录 3246669690@qq.com → 进入主界面并看到知识图谱节点"},
+  {"id":3,"priority":"p1","description":"刷新页面保持登录态，不被踢回登录页"},
+  {"id":4,"priority":"p1","description":"故意输错密码 → 页面有明显错误提示，不跳转"},
+  {"id":5,"priority":"p1","description":"页面无运行错误浮层，Console无红色报错"}
+]}

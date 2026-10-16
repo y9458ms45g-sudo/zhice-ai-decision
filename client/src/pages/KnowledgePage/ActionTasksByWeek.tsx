@@ -144,8 +144,19 @@ const ActionTasksByWeek: React.FC = () => {
 
   const filteredTasks = useMemo((): ActionTask[] => {
     if (!tasks) return [];
-    if (filter === 'all') return tasks;
-    return tasks.filter((t: ActionTask): boolean => t.taskType === filter);
+    let result: ActionTask[] = tasks;
+    if (filter !== 'all') {
+      result = result.filter((t: ActionTask): boolean => t.taskType === filter);
+    }
+    // 按标题去重：相同标题的任务只保留第一条
+    const seen = new Set<string>();
+    return result.filter((t: ActionTask): boolean => {
+      const key = t.title.trim();
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }, [tasks, filter]);
 
   const sortedTasks = useMemo((): ActionTask[] => {

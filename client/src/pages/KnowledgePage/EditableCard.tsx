@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import DOMPurify from 'dompurify';
 import { Check, Loader2, Edit3 } from 'lucide-react';
+import { renderSimpleMarkdown } from '@client/src/utils/markdown';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import type { CardContent } from '@shared/api.interface';
 import { knowledgeApi } from '@client/src/api';
@@ -265,7 +266,7 @@ const EditableCard: React.FC<EditableCardProps> = ({
           data-placeholder="点一下，写点什么吧～"
           className="text-sm leading-relaxed outline-none focus:outline-none cursor-text whitespace-pre-wrap break-words"
           style={{ color: 'var(--ink-2)', minHeight: 68, lineHeight: 1.75 }}
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(serverContent) }}
+          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(renderSimpleMarkdown(serverContent)) }}
         />
       )}
 

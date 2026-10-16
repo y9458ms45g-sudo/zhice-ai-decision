@@ -1,0 +1,1 @@
+{"cases":[{"id":1,"priority":"p0","description":"登录页正常渲染（标题/邮箱/密码/登录按钮/记住账号复选框都可见）"},{"id":2,"priority":"p0","description":"记住账号复选框可点击切换状态（勾选→取消）"},{"id":3,"priority":"p0","description":"邮箱密码输入后登录按钮可点击提交"},{"id":4,"priority":"p1","description":"登录/注册Tab切换正常"}]}

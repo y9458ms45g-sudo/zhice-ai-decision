@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, RefreshCw, History, ChevronLeft } from 'lucide-react';
 import { logger } from '@lark-apaas/client-toolkit/logger';
 import { knowledgeApi } from '@client/src/api';
@@ -11,17 +11,54 @@ interface AiSuggestionDialogProps {
 
 const CARD_ICONS = ['💡', '🎯', '🚀'];
 
+const LOADING_TEXTS = [
+  { text: '正在读取你的知识图谱...', startAt: 0 },
+  { text: '正在调用大模型分析...', startAt: 2000 },
+  { text: '正在生成专属建议，稍等片刻...', startAt: 8000 },
+];
+const TIMEOUT_MS = 60000;
+
 const AiSuggestionDialog: React.FC<AiSuggestionDialogProps> = ({ open, onClose }) => {
   const [loading, setLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState<string>(LOADING_TEXTS[0].text);
+  const [isTimeout, setIsTimeout] = useState(false);
   const [suggestions, setSuggestions] = useState<AiSuggestionItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [history, setHistory] = useState<AiConversation[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const stageTimersRef = useRef<number[]>([]);
+  const timeoutTimerRef = useRef<number>(0);
+
+  const clearAllTimers = useCallback((): void => {
+    stageTimersRef.current.forEach((t: number): void => clearTimeout(t));
+    stageTimersRef.current = [];
+    if (timeoutTimerRef.current) {
+      clearTimeout(timeoutTimerRef.current);
+      timeoutTimerRef.current = 0;
+    }
+  }, []);
+
+  const startLoadingTimers = useCallback((): void => {
+    clearAllTimers();
+    setLoadingText(LOADING_TEXTS[0].text);
+    setIsTimeout(false);
+    LOADING_TEXTS.forEach((stage, idx: number): void => {
+      if (idx === 0) return;
+      const timer = window.setTimeout((): void => {
+        setLoadingText(stage.text);
+      }, stage.startAt);
+      stageTimersRef.current.push(timer);
+    });
+    timeoutTimerRef.current = window.setTimeout((): void => {
+      setIsTimeout(true);
+    }, TIMEOUT_MS);
+  }, [clearAllTimers]);
 
   const fetchSuggestions = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
+    startLoadingTimers();
     try {
       const data = await knowledgeApi.analyzeKnowledge();
       setSuggestions(data.suggestions || []);
@@ -30,8 +67,10 @@ const AiSuggestionDialog: React.FC<AiSuggestionDialogProps> = ({ open, onClose }
       setError('AI 暂时有点累了，稍后再试试吧～');
     } finally {
       setLoading(false);
+      clearAllTimers();
+      setIsTimeout(false);
     }
-  }, []);
+  }, [startLoadingTimers, clearAllTimers]);
 
   const fetchHistory = useCallback(async (): Promise<void> => {
     setHistoryLoading(true);
@@ -82,8 +121,9 @@ const AiSuggestionDialog: React.FC<AiSuggestionDialogProps> = ({ open, onClose }
     }
     return (): void => {
       document.body.style.overflow = '';
+      clearAllTimers();
     };
-  }, [open, fetchSuggestions]);
+  }, [open, fetchSuggestions, clearAllTimers]);
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>): void => {
     if (e.target === e.currentTarget) {
@@ -174,7 +214,9 @@ const AiSuggestionDialog: React.FC<AiSuggestionDialogProps> = ({ open, onClose }
                   <span className="kb-ai-loading-dot kb-ai-dot-2" />
                   <span className="kb-ai-loading-dot kb-ai-dot-3" />
                 </div>
-                <p className="kb-ai-loading-text">正在分析你的知识网络...</p>
+                <p className="kb-ai-loading-text">
+                  {isTimeout ? '生成较慢，请稍后再试～' : loadingText}
+                </p>
               </div>
             )}
 
